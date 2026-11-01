@@ -1,0 +1,939 @@
+================================================================================
+MARSHAL 98 -- PORTFOLIO / RESUME SITE
+HANDOFF NOTES
+================================================================================
+
+WHAT THIS IS
+------------
+A single-file personal portfolio and resume styled as a Windows 98 desktop.
+Desktop icons open draggable windows containing resume sections and project
+write-ups. Built to stand out in a job search for junior software engineer /
+junior Python developer roles.
+
+FILES IN THIS HANDOFF
+---------------------
+  handoff.txt             this file (notes + full source at the bottom)
+  index.html              the entire site -- no build step, no dependencies
+  screenshot-desktop.png  what it looks like rendered
+
+DEPLOY (VERCEL)
+---------------
+  1. Put index.html at the repo root. Push to GitHub.
+  2. Import the repo in Vercel. Framework preset: "Other".
+     Build command: leave empty. Output directory: leave as root.
+  3. Or from the folder: npx vercel  then  npx vercel --prod
+
+  Custom domain: Settings -> Domains, then point DNS at the target Vercel
+  shows you when you add it. (Historically an A record to 76.76.21.21 or a
+  CNAME to cname.vercel-dns.com -- but VERIFY against the dashboard, they
+  have rotated this before.)
+
+  resume.pdf goes next to index.html at the repo root so /resume.pdf resolves.
+  Same for any screenshots you add later.
+
+BEFORE IT GOES LIVE -- REQUIRED EDITS
+-------------------------------------
+All in the CONTENT block at the top of the <script> tag.
+
+  [ ] ME.email            -- currently "you@example.com"
+  [ ] ME.github           -- currently "https://github.com/USERNAME"
+  [ ] ME.linkedin         -- currently "https://linkedin.com/in/USERNAME"
+  [ ] ME.location         -- currently "United States"
+  [ ] Add a real resume.pdf to the repo root
+  [ ] PROJECTS[].link     -- every one is empty. Repos and live URLs are the
+                             thing recruiters actually click. Highest-value
+                             single change on this list.
+  [ ] CLIENT_WORK[].link  -- same
+  [ ] Resume window, Education section -- written vague because school name
+                             and graduation date were not on hand. Fill in.
+  [ ] Fact-check every project blurb. They were written from project notes,
+                             not from the repos, so details may be off.
+
+CONTENT CURRENTLY INCLUDED
+--------------------------
+  Projects (C:)    Greenskeeper, MyBasketball, Proviso,
+                   Billing Automation Portal, Taco Empire, Bots & Automations
+  Client Work (E:) IBCLC Credentialing, Wahl Medical Billing,
+                   GameVault, Summit Auto
+  Resume.doc       summary, experience, education, skills, PDF download button
+  Skills           grouped tag lists (languages, front end, back end, apps, tooling)
+  Contact          mailto composer styled as Outlook Express
+  Recycle Bin      abandoned projects, played as a joke
+
+HOW IT WORKS
+------------
+  Rendering    Everything is one HTML file. No framework, no build, no npm.
+               Icons are hand-written inline SVG at a 32x32 viewBox with
+               shape-rendering:crispEdges so they stay hard-edged when zoomed
+               instead of going blurry. Nothing is a raster image.
+
+  Chrome       The Win98 bevel is two nested inset box-shadows (.raised and
+               .sunken). Light source top-left. Buttons swap the two shadow
+               directions on :active to look pressed.
+
+  Windows      makeWindow() builds the DOM. An `open` Map tracks every live
+               window -- element, taskbar button, minimized flag, maximized
+               flag, and pre-maximize geometry for restore. z-index is a
+               single incrementing counter (zTop) bumped on focus.
+
+  Drag/resize  Pointer Events with setPointerCapture, so mouse and touch use
+               one code path. Dragging is disabled while maximized.
+
+  Mobile       Under 760px wide, windows open maximized and single-tap opens
+               icons instead of double-click. Desktop keeps real double-click
+               with a 450ms manual timer.
+
+  Boot         The BIOS screen is a fixed overlay that self-dismisses after
+               2.6s or on any pointerdown.
+
+DECISIONS WORTH REVISITING
+--------------------------
+  * About Me auto-opens on load (last line of the script). A hiring manager on
+    a phone with 15 seconds may want Resume.doc instead. One-line change.
+  * The boot sequence and the Recycle Bin joke are the personality of the site
+    but they cost a few seconds of a stranger's patience. Keep or cut as a
+    deliberate call, not by accident.
+  * It is one page with simulated windows, not real routes. There is no
+    /projects URL to link someone directly to. If that matters later it means
+    hash routing plus opening the matching window on load.
+
+KNOWN GAPS
+----------
+  * No screenshots or demo GIFs inside the project windows -- text only right
+    now. Adding one image per project would help a lot.
+  * No favicon.
+  * No meta og:image, so link previews when shared will be blank.
+  * Window positions are not remembered between visits.
+
+BUGS ALREADY FOUND AND FIXED
+----------------------------
+  * Icon SVGs were being squashed by flex-shrink inside the column layout --
+    fixed with flex:0 0 32px on .icon svg and .file svg.
+  * Windows opened on top of the left icon column -- fixed with a 110px left
+    gutter on desktop widths.
+
+================================================================================
+FULL SOURCE -- index.html
+================================================================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Marshal — Portfolio</title>
+<meta name="description" content="Marshal — web developer & software engineering student. Portfolio, resume, projects.">
+<style>
+/* ============================================================
+   MARSHAL 98 — desktop portfolio
+   Everything you edit lives in the CONTENT object at the bottom.
+   ============================================================ */
+
+:root{
+  --desktop:#008080;
+  --chrome:#c0c0c0;
+  --chrome-lt:#dfdfdf;
+  --chrome-dk:#808080;
+  --ink:#000;
+  --title-a1:#000080;
+  --title-a2:#1084d0;
+  --title-i1:#808080;
+  --title-i2:#b5b5b5;
+  --link:#0000ee;
+  --ui:11px Tahoma,"MS Sans Serif",Verdana,Geneva,sans-serif;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overflow:hidden}
+body{
+  background:var(--desktop);
+  font:var(--ui);
+  color:var(--ink);
+  cursor:default;
+  user-select:none;
+  image-rendering:pixelated;
+}
+
+/* ---------- shared bevels ---------- */
+.raised{
+  box-shadow:
+    inset -1px -1px 0 0 #0a0a0a,
+    inset  1px  1px 0 0 #fff,
+    inset -2px -2px 0 0 var(--chrome-dk),
+    inset  2px  2px 0 0 var(--chrome-lt);
+}
+.sunken{
+  box-shadow:
+    inset -1px -1px 0 0 #fff,
+    inset  1px  1px 0 0 #0a0a0a,
+    inset -2px -2px 0 0 var(--chrome-lt),
+    inset  2px  2px 0 0 var(--chrome-dk);
+}
+.sunken-thin{box-shadow:inset -1px -1px 0 0 #fff, inset 1px 1px 0 0 var(--chrome-dk)}
+
+/* ---------- boot ---------- */
+#boot{
+  position:fixed;inset:0;z-index:9999;background:#000;color:#c0c0c0;
+  font:14px "Courier New",monospace;padding:24px;line-height:1.6;
+  white-space:pre-wrap;
+}
+#boot .amber{color:#d8d8d8}
+#boot .cur{background:#c0c0c0;display:inline-block;width:8px;height:14px;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+#boot .skip{position:absolute;bottom:20px;right:24px;font-size:11px;color:#666}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- desktop ---------- */
+#desktop{position:fixed;inset:0 0 30px 0;padding:6px 4px}
+.icon{
+  width:80px;padding:4px 2px 6px;margin:0 0 6px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:transparent;border:1px dotted transparent;cursor:default;
+}
+.icon:focus{outline:none;border-color:#fff}
+.icon svg{width:32px;height:32px;flex:0 0 32px;display:block;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.25))}
+.icon span{
+  color:#fff;text-align:center;line-height:1.25;padding:1px 3px;word-break:break-word;
+  text-shadow:1px 1px 0 rgba(0,0,0,.5);
+}
+.icon.sel span{background:var(--title-a1);text-shadow:none}
+.icon.sel{border-color:#fff}
+#icon-grid{display:flex;flex-direction:column;flex-wrap:wrap;height:100%;align-content:flex-start}
+
+/* ---------- windows ---------- */
+.window{
+  position:absolute;background:var(--chrome);padding:3px;
+  display:flex;flex-direction:column;min-width:200px;min-height:120px;
+}
+.window.hidden{display:none}
+.title-bar{
+  height:20px;flex:0 0 auto;display:flex;align-items:center;gap:4px;padding:0 2px 0 3px;
+  background:linear-gradient(90deg,var(--title-i1),var(--title-i2));
+  color:#c9c9c9;font-weight:bold;cursor:default;touch-action:none;
+}
+.window.active .title-bar{background:linear-gradient(90deg,var(--title-a1),var(--title-a2));color:#fff}
+.title-bar svg{width:16px;height:16px;flex:0 0 auto}
+.title-text{flex:1 1 auto;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;letter-spacing:.2px}
+.tb-btns{display:flex;gap:2px}
+.tb-btn{
+  width:16px;height:14px;background:var(--chrome);border:0;padding:0;
+  display:grid;place-items:center;font:bold 9px Tahoma,sans-serif;line-height:1;
+  box-shadow:inset -1px -1px 0 0 #0a0a0a,inset 1px 1px 0 0 #fff,inset -2px -2px 0 0 var(--chrome-dk),inset 2px 2px 0 0 var(--chrome-lt);
+}
+.tb-btn:active{box-shadow:inset 1px 1px 0 0 #0a0a0a,inset -1px -1px 0 0 #fff,inset 2px 2px 0 0 var(--chrome-dk),inset -2px -2px 0 0 var(--chrome-lt)}
+.tb-btn svg{width:8px;height:8px;pointer-events:none}
+
+.menu-bar{flex:0 0 auto;display:flex;gap:2px;padding:2px 1px 3px}
+.menu-bar b{font-weight:normal;padding:1px 6px}
+.menu-bar b u{text-decoration:underline}
+
+.window-body{
+  flex:1 1 auto;overflow:auto;background:#fff;margin:0 1px 1px;padding:12px 14px;
+  box-shadow:inset -1px -1px 0 0 #fff,inset 1px 1px 0 0 #0a0a0a,inset -2px -2px 0 0 var(--chrome-lt),inset 2px 2px 0 0 var(--chrome-dk);
+  user-select:text;-webkit-overflow-scrolling:touch;
+}
+.window-body.grey{background:var(--chrome);box-shadow:none;padding:10px}
+.status-bar{flex:0 0 auto;display:flex;gap:2px;padding:2px 1px 1px}
+.status-bar p{margin:0;flex:1 1 auto;padding:2px 4px;
+  box-shadow:inset -1px -1px 0 0 #fff,inset 1px 1px 0 0 var(--chrome-dk);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.resize-grip{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;touch-action:none}
+
+/* ---------- window content typography ---------- */
+.window-body h1{font:bold 15px Tahoma,sans-serif;margin:0 0 2px}
+.window-body h2{font:bold 12px Tahoma,sans-serif;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #c0c0c0}
+.window-body h2:first-child{margin-top:0}
+.window-body h3{font:bold 11px Tahoma,sans-serif;margin:0 0 2px}
+.window-body p{margin:0 0 8px;line-height:1.55}
+.window-body ul{margin:0 0 8px;padding-left:18px;line-height:1.6}
+.window-body li{margin-bottom:2px}
+.eyebrow{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#606060;margin:0 0 10px}
+.rule{height:2px;margin:10px 0;box-shadow:inset 0 1px 0 0 var(--chrome-dk),inset 0 -1px 0 0 #fff;background:transparent}
+a{color:var(--link)}
+a:visited{color:#551a8b}
+
+fieldset{border:0;margin:0 0 12px;padding:14px 10px 10px;position:relative;
+  box-shadow:inset -1px -1px 0 0 #fff,inset 1px 1px 0 0 var(--chrome-dk)}
+legend{position:absolute;top:-7px;left:8px;background:#fff;padding:0 4px;font-weight:bold}
+.window-body.grey legend{background:var(--chrome)}
+
+.btn{
+  min-width:82px;height:23px;padding:0 12px;background:var(--chrome);border:0;font:var(--ui);
+  box-shadow:inset -1px -1px 0 0 #0a0a0a,inset 1px 1px 0 0 #fff,inset -2px -2px 0 0 var(--chrome-dk),inset 2px 2px 0 0 var(--chrome-lt);
+}
+.btn:active{box-shadow:inset 1px 1px 0 0 #0a0a0a,inset -1px -1px 0 0 #fff,inset 2px 2px 0 0 var(--chrome-dk),inset -2px -2px 0 0 var(--chrome-lt);padding:1px 11px 0 13px}
+.btn:focus{outline:1px dotted #000;outline-offset:-4px}
+
+/* file/list view inside windows */
+.filelist{display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start}
+.file{
+  width:96px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:5px;
+  border:1px dotted transparent;background:none;font:var(--ui);text-align:center;line-height:1.25;
+}
+.file svg{width:32px;height:32px;flex:0 0 32px}
+.file:hover{border-color:#c0c0c0}
+.file span{padding:1px 3px}
+.file:focus{outline:none}
+.file:focus span,.file.sel span{background:var(--title-a1);color:#fff}
+
+.meta{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:0 0 10px}
+.meta dt{color:#606060}
+.meta dd{margin:0}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 10px}
+.tag{padding:2px 6px;background:var(--chrome);box-shadow:inset -1px -1px 0 0 var(--chrome-dk),inset 1px 1px 0 0 #fff;font-size:10px}
+.marquee-wrap{overflow:hidden;white-space:nowrap;background:#000;color:#0f0;padding:3px 0;font:11px "Courier New",monospace;margin:0 0 12px}
+.marquee{display:inline-block;padding-left:100%;animation:slide 18s linear infinite}
+@keyframes slide{to{transform:translateX(-100%)}}
+
+/* ---------- taskbar ---------- */
+#taskbar{
+  position:fixed;left:0;right:0;bottom:0;height:30px;background:var(--chrome);
+  display:flex;align-items:center;gap:4px;padding:2px 3px;z-index:5000;
+  box-shadow:inset 0 1px 0 0 #fff, inset 0 2px 0 0 var(--chrome-lt);
+}
+#start{
+  height:23px;padding:0 8px 0 5px;display:flex;align-items:center;gap:5px;font-weight:bold;
+  background:var(--chrome);border:0;font-family:Tahoma,sans-serif;font-size:11px;
+  box-shadow:inset -1px -1px 0 0 #0a0a0a,inset 1px 1px 0 0 #fff,inset -2px -2px 0 0 var(--chrome-dk),inset 2px 2px 0 0 var(--chrome-lt);
+}
+#start.open{box-shadow:inset 1px 1px 0 0 #0a0a0a,inset -1px -1px 0 0 #fff,inset 2px 2px 0 0 var(--chrome-dk),inset -2px -2px 0 0 var(--chrome-lt)}
+#start svg{width:16px;height:16px}
+.tb-divider{width:2px;height:20px;box-shadow:inset -1px 0 0 0 #fff, inset 1px 0 0 0 var(--chrome-dk);margin:0 2px}
+#tasks{flex:1 1 auto;display:flex;gap:3px;overflow:hidden}
+.task{
+  flex:0 1 160px;min-width:40px;height:22px;padding:0 6px;display:flex;align-items:center;gap:5px;
+  background:var(--chrome);border:0;font:var(--ui);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  box-shadow:inset -1px -1px 0 0 #0a0a0a,inset 1px 1px 0 0 #fff,inset -2px -2px 0 0 var(--chrome-dk),inset 2px 2px 0 0 var(--chrome-lt);
+}
+.task.active{
+  font-weight:bold;
+  background-image:repeating-conic-gradient(#c0c0c0 0 25%, #b0b0b0 0 50%);
+  background-size:2px 2px;
+  box-shadow:inset 1px 1px 0 0 #0a0a0a,inset -1px -1px 0 0 #fff,inset 2px 2px 0 0 var(--chrome-dk),inset -2px -2px 0 0 var(--chrome-lt);
+}
+.task svg{width:16px;height:16px;flex:0 0 auto}
+.task span{overflow:hidden;text-overflow:ellipsis}
+#tray{
+  height:22px;display:flex;align-items:center;gap:6px;padding:0 6px 0 8px;
+  box-shadow:inset -1px -1px 0 0 #fff, inset 1px 1px 0 0 var(--chrome-dk);
+}
+#tray svg{width:14px;height:14px}
+
+/* ---------- start menu ---------- */
+#startmenu{
+  position:fixed;left:3px;bottom:31px;width:212px;background:var(--chrome);padding:3px;display:none;z-index:6000;
+  box-shadow:inset -1px -1px 0 0 #0a0a0a,inset 1px 1px 0 0 #fff,inset -2px -2px 0 0 var(--chrome-dk),inset 2px 2px 0 0 var(--chrome-lt);
+}
+#startmenu.open{display:flex}
+#startmenu .banner{
+  width:26px;background:linear-gradient(180deg,#000080,#1084d0);flex:0 0 auto;position:relative;
+}
+#startmenu .banner b{
+  position:absolute;bottom:8px;left:-14px;width:auto;color:#fff;font:bold 15px Tahoma,sans-serif;
+  transform:rotate(-90deg);transform-origin:left bottom;white-space:nowrap;letter-spacing:.5px;
+}
+#startmenu .banner b i{font-weight:normal;font-style:normal;color:#c0c0c0}
+#startmenu ul{list-style:none;margin:0;padding:0;flex:1 1 auto}
+#startmenu li{display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:12px}
+#startmenu li svg{width:22px;height:22px;flex:0 0 auto}
+#startmenu li:hover{background:var(--title-a1);color:#fff}
+#startmenu hr{border:0;height:2px;margin:3px 2px;box-shadow:inset 0 1px 0 0 var(--chrome-dk),inset 0 -1px 0 0 #fff}
+
+/* ---------- shutdown ---------- */
+#shutdown{position:fixed;inset:0;background:#000;color:#e8a33d;z-index:9998;display:none;place-items:center;text-align:center;padding:20px}
+#shutdown.on{display:grid}
+#shutdown p{font:22px "Courier New",monospace;line-height:1.6;margin:0}
+#shutdown small{display:block;margin-top:24px;font:12px Tahoma,sans-serif;color:#888}
+
+@media (max-width:640px){
+  .icon{width:74px}
+  .window-body{padding:10px}
+  #startmenu{width:190px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================= BOOT ======================= -->
+<div id="boot">
+<span class="amber">Award Modular BIOS v4.51PG
+Copyright (C) 1984-98, Award Software, Inc.
+
+MARSHAL PORTFOLIO SYSTEM  REV 1.0
+
+Main Processor      : Caffeine 486DX
+Memory Testing      : 65536K OK
+Detecting IDE Drives ...
+  Primary Master    : PROJECTS  (C:)
+  Primary Slave     : RESUME    (D:)
+  Secondary Master  : CLIENT-WORK (E:)
+
+Starting Marshal 98 ...</span><span class="cur"></span>
+<div class="skip">click anywhere to skip</div>
+</div>
+
+<!-- ======================= DESKTOP ======================= -->
+<div id="desktop"><div id="icon-grid"></div></div>
+
+<!-- ======================= TASKBAR ======================= -->
+<div id="taskbar">
+  <button id="start"><svg viewBox="0 0 16 16"><rect x="1" y="2" width="6" height="6" fill="#f00"/><rect x="8" y="1" width="7" height="7" fill="#0f0"/><rect x="1" y="9" width="6" height="6" fill="#00f"/><rect x="8" y="9" width="7" height="6" fill="#ff0"/></svg>Start</button>
+  <div class="tb-divider"></div>
+  <div id="tasks"></div>
+  <div id="tray"><svg viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="8" fill="#000080"/><rect x="3" y="5" width="10" height="6" fill="#1084d0"/></svg><span id="clock">--:--</span></div>
+</div>
+
+<!-- ======================= START MENU ======================= -->
+<div id="startmenu">
+  <div class="banner"><b>Marshal<i>98</i></b></div>
+  <ul id="startlist"></ul>
+</div>
+
+<!-- ======================= SHUTDOWN ======================= -->
+<div id="shutdown"><div>
+  <p>It's now safe to hire<br>Marshal.</p>
+  <small>Click to restart</small>
+</div></div>
+
+<script>
+/* ============================================================
+   1. EDIT YOUR STUFF HERE
+   ============================================================ */
+const ME = {
+  name: "Marshal",
+  title: "Web Developer &amp; Software Engineering Student",
+  tagline: "Junior software engineer / Python developer — open to work",
+  email: "you@example.com",          // <-- TODO
+  github: "https://github.com/USERNAME",   // <-- TODO
+  linkedin: "https://linkedin.com/in/USERNAME", // <-- TODO
+  resumePDF: "resume.pdf",           // <-- drop a real PDF next to this file
+  location: "United States"          // <-- TODO
+};
+
+const PROJECTS = [
+  {
+    id:"greenskeeper", icon:"cd", name:"Greenskeeper",
+    kind:"Game — Unity 6 LTS / C#",
+    blurb:"First-person golf course groundskeeping sim.",
+    body:`<p>A first-person sim where you maintain an 18-hole course from the dirt up. Built in Unity 6 LTS.</p>
+      <h3>What it does</h3>
+      <ul>
+        <li>Procedural 18-hole course generation</li>
+        <li>Mowing built on render-texture masks — grass state is painted per-pixel and read back for scoring</li>
+        <li>Economy loop with tool progression and upgrade gating</li>
+      </ul>
+      <h3>What was hard</h3>
+      <p>Reading mow coverage without tanking framerate. Sampling a downscaled mask on a timer instead of per-frame kept it cheap.</p>`,
+    tags:["Unity 6","C#","Shaders","Procedural gen"], link:""
+  },
+  {
+    id:"mybasketball", icon:"cd", name:"MyBasketball",
+    kind:"Game — Unity / C# / Supabase",
+    blurb:"Collectible-card basketball game, retro pixel presentation.",
+    body:`<p>An original mobile card-battler built around a stat-driven basketball loop. Portrait Android-first, retro pixel art, all original teams and players.</p>
+      <h3>Core loop</h3>
+      <ul>
+        <li>Build a 5-card lineup, play a 4-quarter stat battle across OFF / DEF / REB / PM</li>
+        <li>Win pulls 2 draft picks, loss pulls 1, from a persistent 5x5 draft board</li>
+        <li>Train cards, combine duplicates into Pro cards, climb deck tiers Silver &rarr; Aqua</li>
+      </ul>
+      <h3>Architecture</h3>
+      <p>Supabase for auth and Postgres with row-level security, behind an <code>IGameRepository</code> interface so a local repository can stand in offline and in tests.</p>`,
+    tags:["Unity","C#","Supabase","Postgres/RLS","TextMeshPro"], link:""
+  },
+  {
+    id:"proviso", icon:"globe", name:"Proviso",
+    kind:"Web app — React / Vite / Tailwind / Supabase",
+    blurb:"Provider tracking app for a lactation billing business.",
+    body:`<p>Provider credentialing and tracking tool built for a real medical billing business — replacing spreadsheet tracking of provider records and renewal dates.</p>
+      <h3>Stack</h3>
+      <ul>
+        <li>React + Vite + Tailwind on the front end</li>
+        <li>Supabase for auth, Postgres, and row-level security policies scoping data per account</li>
+      </ul>`,
+    tags:["React","Vite","Tailwind","Supabase"], link:""
+  },
+  {
+    id:"billing-portal", icon:"doc", name:"Billing Automation Portal",
+    kind:"Web app — Flask / Python",
+    blurb:"Medical billing automation portal. Built as an interview piece.",
+    body:`<p>A Flask portal that ingests billing spreadsheets, normalizes them, and reports on claim status — built to demonstrate backend work end to end.</p>
+      <h3>Stack</h3>
+      <ul>
+        <li>Flask + SQLAlchemy over SQLite</li>
+        <li>Pandas for ingest, cleaning, and reporting</li>
+        <li>Bootstrap 5 front end</li>
+      </ul>`,
+    tags:["Python","Flask","SQLAlchemy","Pandas","SQLite"], link:""
+  },
+  {
+    id:"taco", icon:"cd", name:"Taco Empire",
+    kind:"Game — React",
+    blurb:"Tycoon game with skill trees and a live sim screen.",
+    body:`<p>A tycoon/incremental game in React, in the lineage of Lemonade Tycoon.</p>
+      <ul>
+        <li>Fully animated simulation screen of the running shop</li>
+        <li>Skill trees and layered progression mechanics</li>
+        <li>Balancing tuned so early upgrades stay meaningful past the first hour</li>
+      </ul>`,
+    tags:["React","Game design","State machines"], link:""
+  },
+  {
+    id:"bots", icon:"net", name:"Bots &amp; Automations",
+    kind:"Python / Node.js",
+    blurb:"Pokémon pixel-art Twitter bot, Minecraft companion bot.",
+    body:`<h3>Pokémon emoji pixel-art bot</h3>
+      <p>Pulls sprite data from PokeAPI, quantizes it to an emoji palette, and posts the result on a schedule with Tweepy.</p>
+      <h3>Minecraft companion bot</h3>
+      <p>Node.js bot on <code>mineflayer</code> that plays alongside you, wired to Claude's API so it takes natural-language instructions in chat and turns them into pathfinding and inventory actions.</p>`,
+    tags:["Python","Tweepy","Node.js","mineflayer","APIs"], link:""
+  }
+];
+
+const CLIENT_WORK = [
+  {
+    id:"ibclc", icon:"globe", name:"IBCLC Credentialing",
+    kind:"Client site — live",
+    blurb:"Marketing site, custom domain, SSL, Netlify deploy.",
+    body:`<p>Full build and launch for IBCLC Credentialing and Billing LLC.</p>
+      <ul>
+        <li>Site build and content structure</li>
+        <li>Netlify deploy with GitHub auto-deploy on push</li>
+        <li>Custom domain DNS cutover and SSL setup</li>
+      </ul>`,
+    tags:["Netlify","DNS/SSL","GitHub CI"], link:"https://ibclccredentialandbill.com"
+  },
+  {
+    id:"wahl", icon:"globe", name:"Wahl Medical Billing",
+    kind:"Brand + site",
+    blurb:"Logo system, brand palette, site, provider portal coordination.",
+    body:`<p>Brand and web work for a medical billing LLC.</p>
+      <ul>
+        <li>Full logo system: navy/teal palette, script wordmark, heart-with-EKG mark</li>
+        <li>Site build plus email signature assets</li>
+        <li>Coordinated developer access for a collaborator adding a provider portal</li>
+      </ul>`,
+    tags:["Branding","Web","Netlify"], link:""
+  },
+  {
+    id:"gamevault", icon:"doc", name:"GameVault",
+    kind:"Coursework — SWDV-141",
+    blurb:"Design packet + implementation, Bootstrap 5.2 and jQuery.",
+    body:`<p>Full design packet through to working implementation: wireframes, site map, and content plan, then built out with Bootstrap 5.2 and jQuery.</p>`,
+    tags:["Bootstrap 5","jQuery","UX docs"], link:""
+  },
+  {
+    id:"summit", icon:"globe", name:"Summit Auto",
+    kind:"Coursework — benchmark build",
+    blurb:"Dealership site in vanilla HTML/CSS/JS.",
+    body:`<p>Car dealership site built with no framework — vanilla HTML, CSS, and JavaScript, as a benchmark against the framework-based builds.</p>`,
+    tags:["HTML","CSS","JavaScript"], link:""
+  }
+];
+
+/* ============================================================
+   2. ICONS (inline pixel SVG)
+   ============================================================ */
+const SVG = {
+  computer:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="3" y="4" width="26" height="18" fill="#c0c0c0"/><rect x="3" y="4" width="26" height="2" fill="#fff"/><rect x="3" y="4" width="2" height="18" fill="#fff"/><rect x="3" y="21" width="26" height="2" fill="#404040"/><rect x="27" y="4" width="2" height="18" fill="#404040"/><rect x="6" y="7" width="20" height="12" fill="#008080"/><rect x="7" y="8" width="18" height="2" fill="#00a0a0"/><rect x="9" y="23" width="14" height="4" fill="#808080"/><rect x="6" y="27" width="20" height="3" fill="#c0c0c0"/><rect x="6" y="27" width="20" height="1" fill="#fff"/><rect x="22" y="28" width="3" height="1" fill="#008000"/></svg>`,
+  folder:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="2" y="7" width="12" height="3" fill="#ffd76a"/><rect x="2" y="9" width="28" height="17" fill="#ffd76a"/><rect x="2" y="9" width="28" height="2" fill="#ffeaa0"/><rect x="2" y="24" width="28" height="2" fill="#c89a2a"/><rect x="5" y="12" width="22" height="11" fill="#ffc93c"/></svg>`,
+  doc:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="6" y="2" width="17" height="28" fill="#fff"/><rect x="6" y="2" width="17" height="1" fill="#c0c0c0"/><rect x="6" y="29" width="17" height="1" fill="#808080"/><rect x="22" y="2" width="4" height="6" fill="#c0c0c0"/><rect x="22" y="8" width="4" height="22" fill="#fff"/><rect x="22" y="2" width="1" height="28" fill="#808080"/><rect x="9" y="8" width="12" height="1" fill="#000080"/><rect x="9" y="11" width="12" height="1" fill="#808080"/><rect x="9" y="14" width="12" height="1" fill="#808080"/><rect x="9" y="17" width="9" height="1" fill="#808080"/><rect x="9" y="20" width="12" height="1" fill="#808080"/><rect x="9" y="23" width="7" height="1" fill="#808080"/></svg>`,
+  briefcase:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="12" y="4" width="8" height="4" fill="#8a6a3a"/><rect x="13" y="5" width="6" height="3" fill="#c0c0c0"/><rect x="2" y="8" width="28" height="18" fill="#a5763c"/><rect x="2" y="8" width="28" height="2" fill="#c99a5e"/><rect x="2" y="24" width="28" height="2" fill="#6b4a1f"/><rect x="2" y="15" width="28" height="3" fill="#6b4a1f"/><rect x="14" y="14" width="4" height="5" fill="#ffd76a"/></svg>`,
+  globe:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="15" r="12" fill="#1084d0"/><circle cx="16" cy="15" r="12" fill="none" stroke="#003a6b" stroke-width="1"/><path d="M4 15h24M16 3v24M16 3c6 6 6 18 0 24M16 3c-6 6-6 18 0 24" fill="none" stroke="#bfe3ff" stroke-width="1"/><path d="M6 9h20M6 21h20" stroke="#bfe3ff" stroke-width="1" fill="none"/><rect x="6" y="26" width="20" height="3" fill="#ffd76a"/></svg>`,
+  net:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="1" y="3" width="15" height="11" fill="#c0c0c0"/><rect x="3" y="5" width="11" height="7" fill="#008080"/><rect x="1" y="12" width="15" height="2" fill="#808080"/><rect x="16" y="17" width="15" height="11" fill="#c0c0c0"/><rect x="18" y="19" width="11" height="7" fill="#008080"/><rect x="16" y="26" width="15" height="2" fill="#808080"/><rect x="8" y="14" width="2" height="8" fill="#404040"/><rect x="8" y="21" width="15" height="2" fill="#404040"/></svg>`,
+  mail:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="2" y="7" width="28" height="18" fill="#fff"/><rect x="2" y="7" width="28" height="18" fill="none" stroke="#808080"/><path d="M2 7l14 11L30 7" fill="none" stroke="#000080" stroke-width="2"/><rect x="20" y="4" width="10" height="10" fill="#1084d0"/><rect x="22" y="6" width="6" height="1" fill="#fff"/><rect x="22" y="9" width="6" height="1" fill="#fff"/></svg>`,
+  trash:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="9" y="3" width="14" height="3" fill="#808080"/><rect x="7" y="7" width="18" height="22" fill="#a8a8a8"/><rect x="7" y="7" width="18" height="2" fill="#d8d8d8"/><rect x="10" y="11" width="2" height="15" fill="#707070"/><rect x="15" y="11" width="2" height="15" fill="#707070"/><rect x="20" y="11" width="2" height="15" fill="#707070"/><rect x="7" y="27" width="18" height="2" fill="#606060"/></svg>`,
+  cd:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="16" r="13" fill="#d8d8d8"/><circle cx="16" cy="16" r="13" fill="none" stroke="#808080"/><circle cx="16" cy="16" r="9" fill="#1084d0"/><circle cx="16" cy="16" r="4" fill="#e8e8e8"/><circle cx="16" cy="16" r="2" fill="#808080"/><path d="M9 9l5 5" stroke="#fff" stroke-width="2"/></svg>`,
+  msn:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="3" y="10" width="26" height="13" fill="#fff"/><rect x="3" y="10" width="26" height="13" fill="none" stroke="#808080"/><text x="16" y="20" font-family="Tahoma,sans-serif" font-size="9" font-weight="bold" fill="#0a5ab5" text-anchor="middle">msn</text></svg>`,
+  help:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="16" r="12" fill="#ffd76a"/><text x="16" y="23" font-family="Tahoma,sans-serif" font-size="18" font-weight="bold" fill="#000080" text-anchor="middle">?</text></svg>`,
+  power:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="17" r="10" fill="none" stroke="#c00" stroke-width="3"/><rect x="14" y="4" width="4" height="12" fill="#c00"/></svg>`
+};
+
+/* ============================================================
+   3. WINDOW CONTENT
+   ============================================================ */
+const yearsList = `
+  <fieldset><legend>Languages</legend>
+    <div class="tags"><span class="tag">JavaScript</span><span class="tag">TypeScript</span><span class="tag">Python</span><span class="tag">C#</span><span class="tag">Java</span><span class="tag">SQL</span><span class="tag">HTML/CSS</span></div>
+  </fieldset>
+  <fieldset><legend>Front end</legend>
+    <div class="tags"><span class="tag">React</span><span class="tag">Vite</span><span class="tag">Tailwind</span><span class="tag">Zustand</span><span class="tag">Bootstrap 5</span><span class="tag">jQuery</span></div>
+  </fieldset>
+  <fieldset><legend>Back end &amp; data</legend>
+    <div class="tags"><span class="tag">Flask</span><span class="tag">SQLAlchemy</span><span class="tag">Supabase</span><span class="tag">PostgreSQL / RLS</span><span class="tag">SQLite</span><span class="tag">Pandas</span></div>
+  </fieldset>
+  <fieldset><legend>Apps &amp; games</legend>
+    <div class="tags"><span class="tag">Unity 6</span><span class="tag">Jetpack Compose</span><span class="tag">Android</span><span class="tag">Node.js</span></div>
+  </fieldset>
+  <fieldset><legend>Tooling</legend>
+    <div class="tags"><span class="tag">Git</span><span class="tag">GitHub</span><span class="tag">Netlify</span><span class="tag">VS Code</span><span class="tag">DNS / SSL</span><span class="tag">Claude Code</span></div>
+  </fieldset>`;
+
+const WINDOWS = {
+  about:{
+    title:"About Me", icon:"msn", w:520, h:400,
+    html:`<div class="marquee-wrap"><span class="marquee">&#9733; Welcome to my home page &#9733; Best viewed at 800x600 &#9733; This site is under construction, forever &#9733; Sign my guestbook &#9733;</span></div>
+      <h1>${ME.name}</h1>
+      <p class="eyebrow">${ME.title}</p>
+      <p>I build web apps and games. Right now that means React and Supabase front ends by day, Unity and Python side projects by night, and real client sites in between — domains, deploys, SSL, the whole handoff.</p>
+      <p>I'm a software engineering student, a parent, and someone who ships. Most of what's on this desktop started as "I wonder if I could" and turned into something running in production or on a phone.</p>
+      <h2>What I'm after</h2>
+      <p>${ME.tagline}. I'm strongest where the front end meets real data — building the API, modeling the schema, and making the interface that sits on top of it.</p>
+      <div class="rule"></div>
+      <p><a href="#" data-open="resume">Read the resume</a> &nbsp;&middot;&nbsp; <a href="#" data-open="projects">Open Projects (C:)</a> &nbsp;&middot;&nbsp; <a href="#" data-open="contact">Get in touch</a></p>`
+  },
+  resume:{
+    title:"Resume.doc — WordPad", icon:"doc", w:600, h:460, menu:true,
+    html:`<h1>${ME.name}</h1>
+      <p class="eyebrow">${ME.title} &nbsp;&middot;&nbsp; ${ME.location}</p>
+      <p><a href="mailto:${ME.email}">${ME.email}</a> &nbsp;&middot;&nbsp; <a href="${ME.github}" target="_blank" rel="noopener">GitHub</a> &nbsp;&middot;&nbsp; <a href="${ME.linkedin}" target="_blank" rel="noopener">LinkedIn</a></p>
+      <p><a class="btn" style="display:inline-flex;align-items:center;text-decoration:none;color:#000" href="${ME.resumePDF}" download>Download PDF</a></p>
+
+      <h2>Summary</h2>
+      <p>Web developer and software engineering student who ships end to end: schema and API through to deployed interface. Experience delivering live client sites, internal business tools, and shipped game builds.</p>
+
+      <h2>Selected experience</h2>
+      <h3>Freelance web developer</h3>
+      <p>Built and launched client sites including a live medical credentialing business site — build, Netlify deploy with GitHub auto-deploy, custom domain DNS, and SSL. Delivered a full brand system (logo suite, palette, wordmark) for a billing LLC and coordinated developer access for a collaborator extending the site with a provider portal.</p>
+      <h3>Independent projects</h3>
+      <p>Designed and built Proviso, a provider-tracking web app on React/Vite/Tailwind/Supabase with row-level security. Built a Flask billing automation portal (SQLAlchemy, Pandas, SQLite). Shipped Unity game builds including a procedurally generated golf sim and a collectible-card basketball game backed by Supabase.</p>
+
+      <h2>Education</h2>
+      <p>Software engineering coursework — intermediate web application development, Git workflows (branching, merging, rebasing, remotes), and math/statistics including financial mathematics.</p>
+
+      <h2>Skills</h2>
+      <p>JavaScript, TypeScript, Python, C#, Java, SQL &middot; React, Vite, Tailwind, Bootstrap 5 &middot; Flask, SQLAlchemy, Supabase, PostgreSQL, Pandas &middot; Unity 6, Jetpack Compose, Node.js &middot; Git, GitHub, Netlify, DNS/SSL</p>`
+  },
+  projects:{
+    title:"Projects (C:)", icon:"computer", w:560, h:400, status:"6 object(s)",
+    html:`<div class="filelist" id="proj-list"></div>`
+  },
+  clients:{
+    title:"Client Work (E:)", icon:"briefcase", w:560, h:380, status:"4 object(s)",
+    html:`<div class="filelist" id="client-list"></div>`
+  },
+  skills:{
+    title:"Network Neighborhood — Skills", icon:"net", w:480, h:400, grey:true,
+    html:yearsList
+  },
+  links:{
+    title:"Internet Explorer", icon:"globe", w:480, h:320,
+    html:`<h2>Bookmarks</h2>
+      <ul>
+        <li><a href="${ME.github}" target="_blank" rel="noopener">GitHub</a> — source for most of what's on this desktop</li>
+        <li><a href="${ME.linkedin}" target="_blank" rel="noopener">LinkedIn</a></li>
+        <li><a href="https://ibclccredentialandbill.com" target="_blank" rel="noopener">ibclccredentialandbill.com</a> — live client site</li>
+      </ul>
+      <div class="rule"></div>
+      <p style="color:#606060">Connected at 56.6 Kbps. Please do not pick up the phone.</p>`
+  },
+  contact:{
+    title:"New Message — Outlook Express", icon:"mail", w:520, h:360, grey:true, menu:true,
+    html:`<fieldset><legend>Send to</legend>
+        <div class="meta">
+          <dt>To:</dt><dd><a href="mailto:${ME.email}">${ME.email}</a></dd>
+          <dt>Subject:</dt><dd>Re: junior software engineer role</dd>
+        </div>
+        <p>Fastest way to reach me is email. I answer everything.</p>
+        <p><a class="btn" style="display:inline-flex;align-items:center;text-decoration:none;color:#000" href="mailto:${ME.email}?subject=Hello%20Marshal">Compose</a></p>
+      </fieldset>
+      <fieldset><legend>Also here</legend>
+        <p><a href="${ME.github}" target="_blank" rel="noopener">GitHub</a> &nbsp;&middot;&nbsp; <a href="${ME.linkedin}" target="_blank" rel="noopener">LinkedIn</a></p>
+      </fieldset>`
+  },
+  bin:{
+    title:"Recycle Bin", icon:"trash", w:440, h:300,
+    html:`<h2>Deleted items</h2>
+      <ul>
+        <li>Crypto Mine Tycoon — good loop, wrong year</li>
+        <li>An OSRS-style farming game with eleven skill trees and no scope</li>
+        <li>Godot rewrite of everything (kept Unity)</li>
+        <li>Three abandoned CSS resets</li>
+      </ul>
+      <div class="rule"></div>
+      <p style="color:#606060">Kept here on purpose. The stuff that didn't work taught more than the stuff that did.</p>`
+  }
+};
+
+/* ============================================================
+   4. DESKTOP ICONS
+   ============================================================ */
+const DESKTOP_ICONS = [
+  {id:"projects", icon:"computer", label:"Projects (C:)"},
+  {id:"resume",   icon:"doc",      label:"Resume.doc"},
+  {id:"clients",  icon:"briefcase",label:"Client Work"},
+  {id:"skills",   icon:"net",      label:"Skills"},
+  {id:"links",    icon:"globe",    label:"Internet Explorer"},
+  {id:"contact",  icon:"mail",     label:"Contact"},
+  {id:"bin",      icon:"trash",    label:"Recycle Bin"},
+  {id:"about",    icon:"msn",      label:"About Me"}
+];
+
+const START_ITEMS = [
+  {id:"about",   icon:"msn",      label:"About Me"},
+  {id:"resume",  icon:"doc",      label:"Resume"},
+  {id:"projects",icon:"computer", label:"Projects"},
+  {id:"clients", icon:"briefcase",label:"Client Work"},
+  {id:"skills",  icon:"net",      label:"Skills"},
+  {id:"contact", icon:"mail",     label:"Contact"},
+  {sep:true},
+  {id:"__shutdown", icon:"power", label:"Shut Down..."}
+];
+
+/* ============================================================
+   5. ENGINE
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const open = new Map();          // id -> {el, taskEl, min, max, prev}
+let zTop = 100;
+const isSmall = () => window.innerWidth < 760;
+
+/* --- boot --- */
+(function boot(){
+  const b = $("#boot");
+  const done = () => { b.style.display="none"; document.removeEventListener("pointerdown", done); };
+  document.addEventListener("pointerdown", done);
+  setTimeout(done, 2600);
+})();
+
+/* --- desktop icons --- */
+const grid = $("#icon-grid");
+DESKTOP_ICONS.forEach(d=>{
+  const b = document.createElement("button");
+  b.className = "icon"; b.type="button"; b.dataset.id = d.id;
+  b.innerHTML = SVG[d.icon] + "<span>"+d.label+"</span>";
+  let lastTap = 0;
+  b.addEventListener("click", e=>{
+    document.querySelectorAll(".icon.sel").forEach(i=>i.classList.remove("sel"));
+    b.classList.add("sel");
+    const now = Date.now();
+    if(now - lastTap < 450 || isSmall()) openWindow(d.id);
+    lastTap = now;
+  });
+  b.addEventListener("dblclick", ()=>openWindow(d.id));
+  b.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();openWindow(d.id);} });
+  grid.appendChild(b);
+});
+$("#desktop").addEventListener("pointerdown", e=>{
+  if(e.target.id==="desktop"||e.target.id==="icon-grid")
+    document.querySelectorAll(".icon.sel").forEach(i=>i.classList.remove("sel"));
+});
+
+/* --- start menu --- */
+const sl = $("#startlist");
+START_ITEMS.forEach(it=>{
+  if(it.sep){ sl.insertAdjacentHTML("beforeend","<hr>"); return; }
+  const li = document.createElement("li");
+  li.innerHTML = SVG[it.icon] + "<span>"+it.label+"</span>";
+  li.addEventListener("click", ()=>{
+    toggleStart(false);
+    if(it.id === "__shutdown") shutdown(); else openWindow(it.id);
+  });
+  sl.appendChild(li);
+});
+function toggleStart(force){
+  const m = $("#startmenu"), s = $("#start");
+  const on = force !== undefined ? force : !m.classList.contains("open");
+  m.classList.toggle("open", on); s.classList.toggle("open", on);
+}
+$("#start").addEventListener("click", e=>{ e.stopPropagation(); toggleStart(); });
+document.addEventListener("pointerdown", e=>{
+  if(!e.target.closest("#startmenu") && !e.target.closest("#start")) toggleStart(false);
+});
+
+function shutdown(){
+  const s = $("#shutdown");
+  s.classList.add("on");
+  s.addEventListener("click", ()=>s.classList.remove("on"), {once:true});
+}
+
+/* --- windows --- */
+function makeWindow(id, cfg){
+  const el = document.createElement("div");
+  el.className = "window raised";
+  const w = Math.min(cfg.w||500, window.innerWidth - 16);
+  const h = Math.min(cfg.h||400, window.innerHeight - 60);
+  const n = open.size;
+  el.style.width = w+"px"; el.style.height = h+"px";
+  const gutter = window.innerWidth > 760 ? 110 : 8;
+  el.style.left = Math.max(8, Math.min(gutter + n*26, window.innerWidth - w - 8))+"px";
+  el.style.top  = Math.max(8, Math.min(30 + n*24, window.innerHeight - h - 40))+"px";
+  el.innerHTML = `
+    <div class="title-bar">
+      ${SVG[cfg.icon]}
+      <span class="title-text">${cfg.title}</span>
+      <div class="tb-btns">
+        <button class="tb-btn" data-act="min" aria-label="Minimize"><svg viewBox="0 0 8 8"><rect x="0" y="6" width="7" height="2" fill="#000"/></svg></button>
+        <button class="tb-btn" data-act="max" aria-label="Maximize"><svg viewBox="0 0 8 8"><rect x="0" y="0" width="8" height="8" fill="none" stroke="#000"/><rect x="0" y="0" width="8" height="2" fill="#000"/></svg></button>
+        <button class="tb-btn" data-act="close" aria-label="Close"><svg viewBox="0 0 8 8"><path d="M1 1l6 6M7 1L1 7" stroke="#000" stroke-width="1.4"/></svg></button>
+      </div>
+    </div>
+    ${cfg.menu ? `<div class="menu-bar"><b><u>F</u>ile</b><b><u>E</u>dit</b><b><u>V</u>iew</b><b><u>H</u>elp</b></div>` : ""}
+    <div class="window-body${cfg.grey?" grey":""}">${cfg.html}</div>
+    ${cfg.status ? `<div class="status-bar"><p>${cfg.status}</p><p style="flex:0 0 110px">Marshal 98</p></div>` : ""}
+    <div class="resize-grip"></div>`;
+  document.body.appendChild(el);
+
+  el.addEventListener("pointerdown", ()=>focusWindow(id), true);
+  el.querySelectorAll(".tb-btn").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      e.stopPropagation();
+      const a = btn.dataset.act;
+      if(a==="close") closeWindow(id);
+      if(a==="min") minimize(id);
+      if(a==="max") maximize(id);
+    });
+  });
+  el.querySelector(".title-bar").addEventListener("dblclick", ()=>maximize(id));
+  dragify(el.querySelector(".title-bar"), el, id);
+  resizify(el.querySelector(".resize-grip"), el);
+
+  // in-content links that open other windows
+  el.querySelectorAll("[data-open]").forEach(a=>{
+    a.addEventListener("click", e=>{ e.preventDefault(); openWindow(a.dataset.open); });
+  });
+  return el;
+}
+
+function openWindow(id){
+  if(open.has(id)){
+    const rec = open.get(id);
+    if(rec.min){ rec.el.classList.remove("hidden"); rec.min=false; }
+    focusWindow(id); return;
+  }
+  const cfg = WINDOWS[id] || PROJECT_WINDOWS[id];
+  if(!cfg) return;
+  const el = makeWindow(id, cfg);
+
+  const task = document.createElement("button");
+  task.className = "task";
+  task.innerHTML = SVG[cfg.icon] + "<span>"+cfg.title+"</span>";
+  task.addEventListener("click", ()=>{
+    const rec = open.get(id);
+    if(rec.min){ rec.el.classList.remove("hidden"); rec.min=false; focusWindow(id); }
+    else if(rec.el.classList.contains("active")) minimize(id);
+    else focusWindow(id);
+  });
+  $("#tasks").appendChild(task);
+
+  open.set(id, {el, task, min:false, max:false, prev:null});
+  if(isSmall()) maximize(id);
+  focusWindow(id);
+  if(id==="projects") fillList("#proj-list", PROJECTS);
+  if(id==="clients")  fillList("#client-list", CLIENT_WORK);
+}
+
+function focusWindow(id){
+  open.forEach((rec,k)=>{
+    const on = k===id;
+    rec.el.classList.toggle("active", on);
+    rec.task.classList.toggle("active", on);
+  });
+  const rec = open.get(id);
+  if(rec) rec.el.style.zIndex = ++zTop;
+}
+function closeWindow(id){
+  const rec = open.get(id); if(!rec) return;
+  rec.el.remove(); rec.task.remove(); open.delete(id);
+  const last = [...open.keys()].pop(); if(last) focusWindow(last);
+}
+function minimize(id){
+  const rec = open.get(id); if(!rec) return;
+  rec.el.classList.add("hidden"); rec.min = true;
+  rec.el.classList.remove("active"); rec.task.classList.remove("active");
+}
+function maximize(id){
+  const rec = open.get(id); if(!rec) return;
+  const s = rec.el.style;
+  if(rec.max){
+    Object.assign(s, rec.prev); rec.max = false;
+  }else{
+    rec.prev = {left:s.left, top:s.top, width:s.width, height:s.height};
+    Object.assign(s, {left:"0px", top:"0px", width:"100%", height:"calc(100% - 30px)"});
+    rec.max = true;
+  }
+}
+
+/* --- drag / resize --- */
+function dragify(handle, el, id){
+  let sx,sy,ox,oy,on=false;
+  handle.addEventListener("pointerdown", e=>{
+    if(e.target.closest(".tb-btn")) return;
+    const rec = open.get(id); if(rec && rec.max) return;
+    on=true; handle.setPointerCapture(e.pointerId);
+    sx=e.clientX; sy=e.clientY; ox=el.offsetLeft; oy=el.offsetTop;
+  });
+  handle.addEventListener("pointermove", e=>{
+    if(!on) return;
+    const nx = ox + e.clientX - sx, ny = oy + e.clientY - sy;
+    el.style.left = Math.max(-el.offsetWidth+70, Math.min(nx, window.innerWidth-60))+"px";
+    el.style.top  = Math.max(0, Math.min(ny, window.innerHeight-60))+"px";
+  });
+  handle.addEventListener("pointerup", e=>{ on=false; try{handle.releasePointerCapture(e.pointerId);}catch(_){} });
+}
+function resizify(grip, el){
+  let sx,sy,ow,oh,on=false;
+  grip.addEventListener("pointerdown", e=>{
+    on=true; e.stopPropagation(); grip.setPointerCapture(e.pointerId);
+    sx=e.clientX; sy=e.clientY; ow=el.offsetWidth; oh=el.offsetHeight;
+  });
+  grip.addEventListener("pointermove", e=>{
+    if(!on) return;
+    el.style.width  = Math.max(220, ow + e.clientX - sx)+"px";
+    el.style.height = Math.max(140, oh + e.clientY - sy)+"px";
+  });
+  grip.addEventListener("pointerup", e=>{ on=false; try{grip.releasePointerCapture(e.pointerId);}catch(_){} });
+}
+
+/* --- project detail windows --- */
+const PROJECT_WINDOWS = {};
+[...PROJECTS, ...CLIENT_WORK].forEach(p=>{
+  PROJECT_WINDOWS["p_"+p.id] = {
+    title:p.name, icon:p.icon, w:520, h:420, status:p.kind,
+    html:`<h1>${p.name}</h1>
+      <p class="eyebrow">${p.kind}</p>
+      <div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+      ${p.body}
+      ${p.link?`<div class="rule"></div><p><a href="${p.link}" target="_blank" rel="noopener">Visit the live site &rarr;</a></p>`:""}`
+  };
+});
+function fillList(sel, items){
+  const box = document.querySelector(sel); if(!box) return;
+  box.innerHTML = "";
+  items.forEach(p=>{
+    const b = document.createElement("button");
+    b.className="file"; b.type="button";
+    b.innerHTML = SVG[p.icon] + "<span>"+p.name+"</span>";
+    let last=0;
+    b.addEventListener("click", ()=>{
+      const now=Date.now();
+      box.querySelectorAll(".file.sel").forEach(f=>f.classList.remove("sel"));
+      b.classList.add("sel");
+      if(now-last<450 || isSmall()) openWindow("p_"+p.id);
+      last=now;
+    });
+    b.addEventListener("dblclick", ()=>openWindow("p_"+p.id));
+    box.appendChild(b);
+  });
+}
+
+/* --- clock --- */
+function tick(){
+  const d = new Date();
+  let h = d.getHours(), m = String(d.getMinutes()).padStart(2,"0");
+  const ap = h>=12 ? "PM":"AM"; h = h%12 || 12;
+  $("#clock").textContent = `${h}:${m} ${ap}`;
+}
+tick(); setInterval(tick, 10000);
+
+/* --- open on load --- */
+setTimeout(()=>openWindow("about"), 2800);
+</script>
+</body>
+</html>
+
+
+================================================================================
+END OF FILE
+================================================================================

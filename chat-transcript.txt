@@ -1,0 +1,179 @@
+================================================================================
+CHAT TRANSCRIPT — "old timey resume" project session
+Saved 2026-08-09
+================================================================================
+
+USER: go into old timey resume folder on desktop
+
+ASSISTANT: [Listed the folder, found handoff.txt, index.html, screenshot-desktop.png.
+Read handoff.txt — a single-file Windows-98-styled portfolio/resume site. Summarized
+what it is, the required TODOs from the handoff notes (email, GitHub, LinkedIn,
+location, resume.pdf, project links, education section), and showed the
+screenshot-desktop.png preview.]
+
+--------------------------------------------------------------------------------
+
+USER: https://github.com/mwahl1?tab=repositories here are my personal repos, which
+should i put on my rsume?
+
+ASSISTANT: [Fetched the public repo list via the GitHub API. Noted that the
+flagship projects referenced in the resume (Greenskeeper, MyBasketball, Proviso,
+Billing Automation Portal, Taco Empire, Bots & Automations) weren't in the public
+list — meaning private or unpushed. Recommended from the public list: keep
+GameVaultFinal and recipe-sharing-app, pick one portfolio repo (not three
+duplicates), skip the StackBlitz scaffolds and coursework exercises. Flagged that
+making Proviso's repo public (after scrubbing secrets) would matter more than any
+repo currently public.]
+
+--------------------------------------------------------------------------------
+
+USER: they're private, the jascnewsite and proviso have theitr own url's i can
+post instead
+
+ASSISTANT: [Confirmed via memory: Proviso → provisopro.com, JacNewSite/Wahl
+Medical Billing → wahlmedicalbilling.com. Edited index.html: added link to
+Proviso project entry, added link + fixed tag (Netlify→Vercel) to Wahl Medical
+Billing client entry, added both to the Internet Explorer bookmarks window.]
+
+--------------------------------------------------------------------------------
+
+USER: remove those, ill post a link to my github
+
+ASSISTANT: [Set ME.github to "https://github.com/mwahl1" in index.html, replacing
+the placeholder. Left the empty link:"" fields as-is on unlinked projects since
+they already render with no link shown.]
+
+--------------------------------------------------------------------------------
+
+USER: https://www.linkedin.com/in/marshalwahl marshalwahl85@gmail.com
+
+ASSISTANT: [Updated ME.email and ME.linkedin in index.html to the real values.]
+
+--------------------------------------------------------------------------------
+
+USER: location is boise idaho
+
+ASSISTANT: [Updated ME.location to "Boise, Idaho" in index.html.]
+
+--------------------------------------------------------------------------------
+
+USER: i thought this site was going to bed more or less my resume?
+
+ASSISTANT: [Clarified that the site itself functions as the resume via the
+Resume.doc window; the Download PDF button is just an optional extra for ATS
+uploads/email attachments. Asked whether to remove the button or generate a
+matching PDF. User chose to keep it and have a PDF generated.]
+
+--------------------------------------------------------------------------------
+
+USER: [mid-turn] i think keping the download pdf shows 1 i can build that and 2
+its easy to grab
+
+ASSISTANT: [Built resume.html (plain professional resume layout matching the
+site's Resume.doc content), rendered it to resume.pdf via headless Chrome, saved
+it into the folder next to index.html, and rendered/showed a PNG preview.]
+
+--------------------------------------------------------------------------------
+
+USER: resume looks great. add this section somwhere for schooling, i am
+currentyl in my sohpmore year of college at Colege of western idaho. this is my
+current degree i am working for at CWI, and i am then planning to go to Boise
+State university to get my bachelors in IT Management. Spruce it up make it
+sound professioanl and make it a sectionm of the resume, on teh interactive
+side and the pdf side
+
+ASSISTANT: [Asked which CWI program (given SWDV coursework folders on the
+desktop) — user picked "AAS in Software Development." Added an Education section
+to index.html's Resume.doc window and to resume.html: College of Western Idaho
+(A.A.S. Software Development, in progress, sophomore year) and Boise State
+University (Bachelor's, IT Management, planned). Regenerated resume.pdf.]
+
+--------------------------------------------------------------------------------
+
+USER: make the pdf into a word doc or something the exact same way it'll look
+live and put it in the folder so i can see it
+
+ASSISTANT: [Created resume.doc — an HTML-with-Word-metadata file (the standard
+"Word opens HTML" trick) using the exact same content/CSS as resume.pdf, saved
+into the folder.]
+
+--------------------------------------------------------------------------------
+
+USER: let me see the site live
+
+ASSISTANT: [Ran the deploy-to-vercel skill: installed the Vercel CLI, logged in
+(user authenticated via device flow — "auth'd"), confirmed single team (marsh3),
+deployed the folder. First deploy auto-assigned to production as
+marshal-resume.vercel.app with stable aliases. Shared the live URL.]
+
+--------------------------------------------------------------------------------
+
+USER: the downlaodable pdf, is just literally 1 line too long asnd it goes to 2
+pages. do waht u have to and keep it only 1 page
+
+ASSISTANT: [Confirmed via raw PDF inspection it was 2 pages. Tightened
+resume.html's CSS (margins, line-height, spacing) and regenerated resume.pdf —
+confirmed 1 page. Synced resume.doc with the same tightened spacing. Redeployed
+to production so the live site's Download PDF matched.]
+
+--------------------------------------------------------------------------------
+
+USER: [mid-turn] also IBCLC was given to another dev to take over and run. that
+site is no longer mine in the most current form. is tere a way to have the most
+recent git repo to be the link to it instead?
+
+ASSISTANT: [Found the local clone at Desktop/Ravan Website, confirmed via
+README.md it's the IBCLC Credentialing & Billing LLC site, confirmed remote
+mwahl1/RavanSite, confirmed local main == origin/main with the last commit
+(a353fc5) authored by Marshal — nothing from the new dev had landed yet. Asked
+how the user wanted the link handled; user chose "push a public snapshot repo."
+Confirmed RavanSite is private (404 on unauthenticated API check). Created a new
+public repo mwahl1/ibclc-credentialing-portfolio via the GitHub API using the
+stored git credential, pushed a single clean commit snapshotting the site at
+a353fc5, and updated both the project-card link and the Internet Explorer
+bookmark link in index.html to point to it instead of the private repo/live
+site. Redeployed to production.]
+
+--------------------------------------------------------------------------------
+
+USER: also under c;oemt wprl. gamevualt and summit auto were things for school
+and not for a client
+
+ASSISTANT: [Moved the GameVault and Summit Auto entries from CLIENT_WORK to
+PROJECTS in index.html (they were already labeled "Coursework" in their kind
+field). Updated the Projects/Client Work window status counts (8 / 2). Verified
+GameVaultFinal is a public repo and added its link to the GameVault project card.
+Redeployed to production.]
+
+--------------------------------------------------------------------------------
+
+USER: honesdtly, do you think i should start applying for jobs now? like junior
+dev roles?
+
+ASSISTANT: [Gave a direct recommendation: yes, start now — a live production app
+with a real client (Proviso), a deployed client site (Wahl Medical Billing), and
+shipped game builds is a stronger portfolio than most junior candidates have,
+degree-in-progress or not. Noted the job hunt takes months regardless, so
+starting early costs little versus waiting for the degree to finish.]
+
+--------------------------------------------------------------------------------
+
+USER: help me find junior dev job postings to apply to
+
+ASSISTANT: [Asked whether to search Boise-area, remote, or both — user chose
+"Boise-area + remote." Ran web searches and returned a categorized list of
+job-board links (LinkedIn, Indeed, ZipRecruiter, Glassdoor, arc.dev) split
+Boise-area vs. remote, plus tactical notes: narrow search terms to match the
+actual stack (React/Flask/Supabase/C#), set up saved-search alerts, and verify
+the resume.pdf/resume.doc survive ATS parsing better than a heavily designed PDF
+would.]
+
+--------------------------------------------------------------------------------
+
+USER: save this whole chat and put it in the folder
+
+ASSISTANT: [This file.]
+
+================================================================================
+END OF TRANSCRIPT
+================================================================================

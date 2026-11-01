@@ -1,0 +1,84 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta name="ProgId" content="Word.Document">
+<title>Marshal Wahl — Resume</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page Section1 { size: 8.5in 11.0in; margin: 0.6in; mso-page-orientation: portrait; }
+  div.Section1 { page: Section1; }
+  *{box-sizing:border-box}
+  body{
+    font-family: Georgia, 'Times New Roman', serif;
+    color:#1a1a1a;
+    margin:0;
+    font-size:11pt;
+    line-height:1.38;
+  }
+  h1{font-size:21pt;margin:0 0 2px;font-weight:700;letter-spacing:.3px}
+  .eyebrow{font-size:10.5pt;color:#444;margin:0 0 6px;font-family:Arial,Helvetica,sans-serif}
+  .contact{font-size:9.5pt;color:#333;margin:0 0 12px;font-family:Arial,Helvetica,sans-serif}
+  .contact a{color:#333;text-decoration:none}
+  .contact span{margin:0 8px}
+  .contact span:first-child{margin-left:0}
+  h2{
+    font-size:12pt;text-transform:uppercase;letter-spacing:.6px;
+    border-bottom:1.4px solid #1a1a1a;padding-bottom:2px;margin:12px 0 6px;
+    font-family:Arial,Helvetica,sans-serif;font-weight:700;
+  }
+  h2:first-of-type{margin-top:0}
+  h3{font-size:11pt;margin:7px 0 1px;font-weight:700}
+  p{margin:0 0 6px}
+  .edu-note{font-size:9.5pt;color:#444;font-style:italic;margin:0 0 3px;font-family:Arial,Helvetica,sans-serif}
+  .skills p{margin:0 0 4px}
+  .skills b{font-family:Arial,Helvetica,sans-serif;font-size:10pt}
+</style>
+</head>
+<body>
+<div class="Section1">
+
+<h1>Marshal Wahl</h1>
+<p class="eyebrow">Web Developer &amp; Software Engineering Student</p>
+<p class="contact">
+  <span>Boise, Idaho</span>&middot;
+  <span><a href="mailto:marshalwahl85@gmail.com">marshalwahl85@gmail.com</a></span>&middot;
+  <span><a href="https://github.com/mwahl1">github.com/mwahl1</a></span>&middot;
+  <span><a href="https://www.linkedin.com/in/marshalwahl">linkedin.com/in/marshalwahl</a></span>
+</p>
+
+<h2>Summary</h2>
+<p>Web developer and software engineering student who ships end to end: schema and API through to deployed interface. Experience delivering live client sites, internal business tools, and shipped game builds.</p>
+
+<h2>Selected Experience</h2>
+<h3>Freelance Web Developer</h3>
+<p>Built and launched client sites including a live medical credentialing business site — build, Netlify deploy with GitHub auto-deploy, custom domain DNS, and SSL. Delivered a full brand system (logo suite, palette, wordmark) for a billing LLC and coordinated developer access for a collaborator extending the site with a provider portal.</p>
+<h3>Independent Projects</h3>
+<p>Designed and built Proviso, a provider-tracking web app on React/Vite/Tailwind/Supabase with row-level security. Built a Flask billing automation portal (SQLAlchemy, Pandas, SQLite). Shipped Unity game builds including a procedurally generated golf sim and a collectible-card basketball game backed by Supabase.</p>
+
+<h2>Education</h2>
+<h3>College of Western Idaho</h3>
+<p class="edu-note">A.A.S. in Software Development — in progress, sophomore year</p>
+<p>Coursework in intermediate web application development, Git workflows (branching, merging, rebasing, remotes), and math/statistics including financial mathematics.</p>
+<h3>Boise State University</h3>
+<p class="edu-note">Bachelor's degree, Information Technology Management — planned, following CWI</p>
+
+<h2>Skills</h2>
+<div class="skills">
+  <p><b>Languages:</b> JavaScript, TypeScript, Python, C#, Java, SQL, HTML/CSS</p>
+  <p><b>Front end:</b> React, Vite, Tailwind, Bootstrap 5, jQuery</p>
+  <p><b>Back end &amp; data:</b> Flask, SQLAlchemy, Supabase, PostgreSQL/RLS, SQLite, Pandas</p>
+  <p><b>Apps &amp; games:</b> Unity 6, Jetpack Compose, Android, Node.js</p>
+  <p><b>Tooling:</b> Git, GitHub, Netlify, Vercel, DNS/SSL</p>
+</div>
+
+</div>
+</body>
+</html>
