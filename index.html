@@ -745,7 +745,6 @@ function openWindow(id){
   $("#tasks").appendChild(task);
 
   open.set(id, {el, task, min:false, max:false, prev:null});
-  if(isSmall()) maximize(id);
   focusWindow(id);
   if(id==="projects")  fillList("#proj-list", PROJECTS);
   if(id==="clients")   fillList("#client-list", CLIENT_WORK);
