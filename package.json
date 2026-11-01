@@ -1,0 +1,8 @@
+{
+  "name": "marshal-resume",
+  "private": true,
+  "dependencies": {
+    "@upstash/redis": "^1.34.3",
+    "@upstash/ratelimit": "^2.0.5"
+  }
+}

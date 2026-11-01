@@ -159,6 +159,21 @@ legend{position:absolute;top:-7px;left:8px;background:#fff;padding:0 4px;font-we
 .meta{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:0 0 10px}
 .meta dt{color:#606060}
 .meta dd{margin:0}
+
+.gb-field{margin:0 0 8px}
+.gb-field label{display:block;font-size:10px;color:#606060;margin:0 0 2px}
+.gb-field input,.gb-field textarea{
+  width:100%;font:var(--ui);padding:3px 4px;border:0;background:#fff;color:var(--ink);
+  box-shadow:inset -1px -1px 0 0 #fff,inset 1px 1px 0 0 #0a0a0a,inset -2px -2px 0 0 var(--chrome-lt),inset 2px 2px 0 0 var(--chrome-dk);
+}
+.gb-field textarea{resize:vertical;min-height:50px;font-family:inherit}
+.gb-error{color:#a00;font-size:11px;margin:0 0 8px;min-height:14px}
+.gb-entry{padding:6px 0;border-bottom:1px solid #c0c0c0}
+.gb-entry:last-child{border-bottom:0}
+.gb-entry .gb-name{font-weight:bold}
+.gb-entry .gb-date{color:#808080;font-size:10px;margin-left:6px}
+.gb-entry .gb-msg{margin:2px 0 0}
+.gb-empty{color:#808080;font-style:italic}
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 10px}
 .tag{padding:2px 6px;background:var(--chrome);box-shadow:inset -1px -1px 0 0 var(--chrome-dk),inset 1px 1px 0 0 #fff;font-size:10px}
 .marquee-wrap{overflow:hidden;white-space:nowrap;background:#000;color:#0f0;padding:3px 0;font:11px "Courier New",monospace;margin:0 0 12px}
@@ -415,7 +430,8 @@ const SVG = {
   cd:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="16" r="13" fill="#d8d8d8"/><circle cx="16" cy="16" r="13" fill="none" stroke="#808080"/><circle cx="16" cy="16" r="9" fill="#1084d0"/><circle cx="16" cy="16" r="4" fill="#e8e8e8"/><circle cx="16" cy="16" r="2" fill="#808080"/><path d="M9 9l5 5" stroke="#fff" stroke-width="2"/></svg>`,
   msn:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="3" y="10" width="26" height="13" fill="#fff"/><rect x="3" y="10" width="26" height="13" fill="none" stroke="#808080"/><text x="16" y="20" font-family="Tahoma,sans-serif" font-size="9" font-weight="bold" fill="#0a5ab5" text-anchor="middle">msn</text></svg>`,
   help:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="16" r="12" fill="#ffd76a"/><text x="16" y="23" font-family="Tahoma,sans-serif" font-size="18" font-weight="bold" fill="#000080" text-anchor="middle">?</text></svg>`,
-  power:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="17" r="10" fill="none" stroke="#c00" stroke-width="3"/><rect x="14" y="4" width="4" height="12" fill="#c00"/></svg>`
+  power:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><circle cx="16" cy="17" r="10" fill="none" stroke="#c00" stroke-width="3"/><rect x="14" y="4" width="4" height="12" fill="#c00"/></svg>`,
+  book:`<svg viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="4" y="5" width="12" height="23" fill="#b5451e"/><rect x="16" y="5" width="12" height="23" fill="#8f3417"/><rect x="4" y="5" width="12" height="2" fill="#d8673a"/><rect x="15" y="5" width="2" height="23" fill="#5c200d"/><rect x="7" y="11" width="6" height="1" fill="#ffd76a"/><rect x="7" y="15" width="6" height="1" fill="#ffd76a"/><rect x="7" y="19" width="6" height="1" fill="#ffd76a"/><rect x="19" y="11" width="6" height="1" fill="#e8a33d"/><rect x="19" y="15" width="6" height="1" fill="#e8a33d"/><rect x="19" y="19" width="6" height="1" fill="#e8a33d"/></svg>`
 };
 
 /* ============================================================
@@ -527,6 +543,24 @@ const WINDOWS = {
       </ul>
       <div class="rule"></div>
       <p style="color:#606060">Kept here on purpose. The stuff that didn't work taught more than the stuff that did.</p>`
+  },
+  guestbook:{
+    title:"Guestbook.exe", icon:"book", w:460, h:420,
+    html:`<p class="eyebrow">Leave a note</p>
+      <form id="gb-form">
+        <div class="gb-field">
+          <label for="gb-name">Name</label>
+          <input id="gb-name" name="name" maxlength="40" autocomplete="off">
+        </div>
+        <div class="gb-field">
+          <label for="gb-message">Message</label>
+          <textarea id="gb-message" name="message" maxlength="300" rows="3"></textarea>
+        </div>
+        <p class="gb-error" id="gb-error"></p>
+        <button type="submit" class="btn">Sign</button>
+      </form>
+      <div class="rule"></div>
+      <div id="gb-list"><p class="gb-empty">Loading...</p></div>`
   }
 };
 
@@ -535,11 +569,12 @@ const WINDOWS = {
    ============================================================ */
 const DESKTOP_ICONS = [
   {id:"projects", icon:"computer", label:"Projects (C:)"},
-  {id:"resume",   icon:"doc",      label:"Resume.doc"},
+  {id:"resume",   icon:"doc",      label:"Resume.<wbr>doc"},
   {id:"clients",  icon:"briefcase",label:"Client Work"},
   {id:"skills",   icon:"net",      label:"Skills"},
   {id:"links",    icon:"globe",    label:"Internet Explorer"},
   {id:"contact",  icon:"mail",     label:"Contact"},
+  {id:"guestbook",icon:"book",     label:"Guestbook"},
   {id:"bin",      icon:"trash",    label:"Recycle Bin"},
   {id:"about",    icon:"msn",      label:"About Me"}
 ];
@@ -694,8 +729,64 @@ function openWindow(id){
   open.set(id, {el, task, min:false, max:false, prev:null});
   if(isSmall()) maximize(id);
   focusWindow(id);
-  if(id==="projects") fillList("#proj-list", PROJECTS);
-  if(id==="clients")  fillList("#client-list", CLIENT_WORK);
+  if(id==="projects")  fillList("#proj-list", PROJECTS);
+  if(id==="clients")   fillList("#client-list", CLIENT_WORK);
+  if(id==="guestbook") initGuestbook();
+}
+
+/* ---------- guestbook ---------- */
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function gbFormatDate(iso){
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+}
+function gbEntryHtml(entry){
+  return `<div class="gb-entry"><span class="gb-name">${escapeHtml(entry.name)}</span><span class="gb-date">${gbFormatDate(entry.createdAt)}</span><p class="gb-msg">${escapeHtml(entry.message)}</p></div>`;
+}
+function renderGuestbook(entries){
+  const list = $("#gb-list");
+  if(!list) return;
+  list.innerHTML = entries.length
+    ? entries.map(gbEntryHtml).join("")
+    : '<p class="gb-empty">No entries yet. Be the first to sign!</p>';
+}
+function initGuestbook(){
+  const form = $("#gb-form");
+  if(!form) return;
+  const err = $("#gb-error");
+
+  fetch("/api/guestbook")
+    .then(r=>r.json())
+    .then(d=>renderGuestbook(d.entries||[]))
+    .catch(()=>{ $("#gb-list").innerHTML = '<p class="gb-empty">Couldn’t load entries.</p>'; });
+
+  form.addEventListener("submit", e=>{
+    e.preventDefault();
+    err.textContent = "";
+    const name = $("#gb-name").value.trim();
+    const message = $("#gb-message").value.trim();
+    if(!name || !message){ err.textContent = "Please fill in both fields."; return; }
+
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    fetch("/api/guestbook", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name, message})
+    }).then(async r=>{
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok){ err.textContent = d.error || "Something went wrong. Try again later."; return; }
+      form.reset();
+      const list = $("#gb-list");
+      const empty = list.querySelector(".gb-empty");
+      if(empty) empty.remove();
+      list.insertAdjacentHTML("afterbegin", gbEntryHtml(d.entry));
+    }).catch(()=>{
+      err.textContent = "Something went wrong. Try again later.";
+    }).finally(()=>{ btn.disabled = false; });
+  });
 }
 
 function focusWindow(id){

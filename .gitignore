@@ -1,3 +1,5 @@
 .vercel
 ~$*
 *_files/
+.env*
+node_modules
