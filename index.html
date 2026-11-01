@@ -305,6 +305,7 @@ const ME = {
   github: "https://github.com/mwahl1",
   linkedin: "https://www.linkedin.com/in/marshalwahl",
   resumePDF: "resume.pdf",           // <-- drop a real PDF next to this file
+  coverLetterPDF: "cover-letter.pdf",
   location: "Boise, Idaho"
 };
 
@@ -465,7 +466,7 @@ const WINDOWS = {
       <h2>What I'm after</h2>
       <p>${ME.tagline}. I'm strongest where the front end meets real data: building the API, modeling the schema, and making the interface that sits on top of it.</p>
       <div class="rule"></div>
-      <p><a href="#" data-open="resume">Read the resume</a> &nbsp;&middot;&nbsp; <a href="#" data-open="projects">Open Projects (C:)</a> &nbsp;&middot;&nbsp; <a href="#" data-open="contact">Get in touch</a></p>`
+      <p><a href="#" data-open="resume">Read the resume</a> &nbsp;&middot;&nbsp; <a href="#" data-open="coverletter">Read the cover letter</a> &nbsp;&middot;&nbsp; <a href="#" data-open="projects">Open Projects (C:)</a> &nbsp;&middot;&nbsp; <a href="#" data-open="contact">Get in touch</a></p>`
   },
   resume:{
     title:"Resume.doc: WordPad", icon:"doc", w:600, h:460, menu:true,
@@ -492,6 +493,22 @@ const WINDOWS = {
 
       <h2>Skills</h2>
       <p>JavaScript, TypeScript, Python, C#, Java, SQL &middot; React, Vite, Tailwind, Bootstrap 5 &middot; Flask, SQLAlchemy, Supabase, PostgreSQL, Pandas &middot; Unity 6, Jetpack Compose, Node.js &middot; Git, GitHub, Netlify, DNS/SSL</p>`
+  },
+  coverletter:{
+    title:"Cover-letter.doc: WordPad", icon:"doc", w:560, h:460, menu:true,
+    html:`<h1>${ME.name}</h1>
+      <p class="eyebrow">Cover Letter</p>
+      <p><a href="mailto:${ME.email}">${ME.email}</a> &nbsp;&middot;&nbsp; <a href="${ME.github}" target="_blank" rel="noopener">GitHub</a> &nbsp;&middot;&nbsp; <a href="${ME.linkedin}" target="_blank" rel="noopener">LinkedIn</a></p>
+      <p><a class="btn" style="display:inline-flex;align-items:center;text-decoration:none;color:#000" href="${ME.coverLetterPDF}" download>Download PDF</a></p>
+
+      <div class="rule"></div>
+
+      <p>Dear Hiring Manager,</p>
+      <p>I'm writing to apply for the Junior Software Engineer role on your team. I'm a software engineering student at the College of Western Idaho who ships real, working software, not just coursework, and I'd like to bring that habit to your team.</p>
+      <p>Over the past year I've designed and built Proviso, a provider credentialing web app on React, Vite, Tailwind, and Supabase, with row level security policies scoping data per account. I built a Flask billing automation portal that ingests spreadsheets, normalizes them, and reports on claim status end to end. I also shipped two Unity game builds, including a procedurally generated 18-hole golf simulation with a custom render-texture scoring system, and a collectible-card basketball game backed by a Supabase database. Outside of my own projects, I've handled the freelance side too, launching a live client site with a custom domain, SSL, and automated GitHub-to-Netlify deployment, plus a full brand system for the business behind it.</p>
+      <p>What I look for in a team is work that real people actually depend on day to day, not just a portfolio piece or a demo. That's exactly how I like to build: starting from the data model and the API, then working up to an interface that holds together under real use.</p>
+      <p>I've attached my resume, which goes into more detail on the stack and the work. I'd welcome the chance to talk about how I could contribute to your team.</p>
+      <p>Sincerely,<br>${ME.name}</p>`
   },
   projects:{
     title:"Projects (C:)", icon:"computer", w:560, h:400, status:"6 object(s)",
@@ -570,6 +587,7 @@ const WINDOWS = {
 const DESKTOP_ICONS = [
   {id:"projects", icon:"computer", label:"Projects (C:)"},
   {id:"resume",   icon:"doc",      label:"Resume.<wbr>doc"},
+  {id:"coverletter",icon:"doc",    label:"Cover Letter"},
   {id:"clients",  icon:"briefcase",label:"Client Work"},
   {id:"skills",   icon:"net",      label:"Skills"},
   {id:"links",    icon:"globe",    label:"Internet Explorer"},
